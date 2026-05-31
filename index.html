@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>24-Hour Reality Check</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Nunito', sans-serif; background: linear-gradient(135deg, #fff8f0 0%, #ffeedd 100%); min-height: 100vh; padding: 24px 16px; }
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 { font-size: 28px; font-weight: 800; color: #e85d04; margin-bottom: 4px; }
+  .header p { font-size: 14px; color: #aaa; }
+  .main { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; max-width: 860px; margin: 0 auto; }
+  .left { flex: 1; min-width: 280px; max-width: 340px; display: flex; flex-direction: column; gap: 16px; }
+  .right { flex: 1; min-width: 280px; max-width: 400px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .card { background: #fff; border-radius: 20px; padding: 18px; box-shadow: 0 4px 20px rgba(232,93,4,0.08); }
+  .card h3 { font-size: 12px; font-weight: 800; color: #ccc; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+  label { font-size: 12px; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 5px; margin-top: 12px; }
+  label:first-of-type { margin-top: 0; }
+  input[type="text"], input[type="number"] {
+    width: 100%; padding: 10px 12px; border: 2px solid #f0f0f0;
+    border-radius: 10px; font-size: 14px; font-family: 'Nunito', sans-serif;
+    outline: none; transition: border 0.2s; color: #333;
+  }
+  input:focus { border-color: #e85d04; }
+  .color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .color-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: border 0.15s, transform 0.15s; }
+  .color-dot:hover { transform: scale(1.2); }
+  .color-dot.selected { border-color: #333; transform: scale(1.1); }
+  .add-btn {
+    width: 100%; margin-top: 14px; padding: 12px;
+    background: linear-gradient(135deg, #e85d04, #f4a261);
+    color: #fff; border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 800; font-family: 'Nunito', sans-serif;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+  }
+  .add-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .add-btn:active { transform: scale(0.98); }
+  .err { color: #e85d04; font-size: 12px; margin-top: 8px; display: none; background: #fff3ee; padding: 6px 10px; border-radius: 8px; }
+  .activity-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-size: 13px;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
+  .activity-label { flex: 1; color: #444; font-weight: 600; }
+  .activity-time { color: #bbb; font-size: 12px; }
+  .del-btn { background: none; border: none; color: #e0e0e0; cursor: pointer; font-size: 18px; padding: 0 2px; transition: color 0.15s; font-family: 'Nunito', sans-serif; }
+  .del-btn:hover { color: #e85d04; }
+  .empty-msg { color: #ddd; font-size: 13px; text-align: center; padding: 10px 0; }
+  .clock-wrap { position: relative; width: 100%; max-width: 300px; }
+  canvas#clock { width: 100%; height: auto; display: block; }
+  .total-pill {
+    background: #fff3ee; color: #e85d04; font-size: 13px; font-weight: 700;
+    padding: 6px 18px; border-radius: 100px; text-align: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #444; margin-bottom: 7px; }
+  .legend-dot { width: 13px; height: 13px; border-radius: 4px; flex-shrink: 0; }
+  .legend-name { flex: 1; font-weight: 600; }
+  .legend-pct { color: #aaa; font-size: 12px; }
+  .reset-btn {
+    width: 100%; padding: 10px;
+    background: #fff; color: #e85d04;
+    border: 2px solid #f4a261; border-radius: 12px;
+    font-size: 14px; font-weight: 700; font-family: 'Nunito', sans-serif;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .reset-btn:hover { background: #fff8f2; }
+  .list-scroll { max-height: 220px; overflow-y: auto; }
+  @media (max-width: 600px) {
+    .header h1 { font-size: 22px; }
+    .main { flex-direction: column; align-items: center; }
+    .left, .right { max-width: 100%; min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>⏰ 24-Hour Reality Check</h1>
+  <p>Isi aktivitasmu hari ini — lihat bagaimana waktumu terbagi!</p>
+</div>
+<div class="main">
+  <div class="left">
+    <div class="card">
+      <h3>Tambah Aktivitas</h3>
+      <label>Nama Aktivitas</label>
+      <input type="text" id="actName" placeholder="contoh: Tidur, Kuliah, Sosmed..." maxlength="30" />
+      <label>Durasi (jam)</label>
+      <input type="number" id="actHours" placeholder="contoh: 2 atau 1.5" min="0.5" max="24" step="0.5" />
+      <label>Pilih Warna</label>
+      <div class="color-row" id="colorRow"></div>
+      <p class="err" id="errMsg"></p>
+      <button class="add-btn" onclick="addActivity()">+ Tambah Aktivitas</button>
+    </div>
+    <div class="card">
+      <h3>Daftar Aktivitas</h3>
+      <div class="list-scroll">
+        <div id="actList"><p class="empty-msg">Belum ada aktivitas...</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="card" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <h3 style="align-self:flex-start;">Chart 24 Jam</h3>
+      <div class="clock-wrap">
+        <canvas id="clock" width="300" height="300"></canvas>
+      </div>
+      <div class="total-pill" id="totalInfo">Total: 0 / 24 jam terisi</div>
+    </div>
+    <div class="card" style="width:100%;">
+      <h3>Keterangan</h3>
+      <div id="legendList"><p class="empty-msg">Belum ada data...</p></div>
+    </div>
+    <button class="reset-btn" onclick="resetAll()">↺ Reset Semua</button>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#FF6B6B','#FF9F43','#FECA57','#48DBFB','#1DD1A1','#54A0FF','#5F27CD','#FF9FF3','#00D2D3','#C8D6E5','#EE5A24','#009432','#F368E0','#10AC84','#576574'];
+let selectedColor = 0;
+let activities = [];
+
+const colorRow = document.getElementById('colorRow');
+COLORS.forEach((c, i) => {
+  const d = document.createElement('div');
+  d.className = 'color-dot' + (i === 0 ? ' selected' : '');
+  d.style.background = c;
+  d.onclick = () => {
+    selectedColor = i;
+    document.querySelectorAll('.color-dot').forEach((x, j) => x.classList.toggle('selected', j === i));
+  };
+  colorRow.appendChild(d);
+});
+
+function addActivity() {
+  const name = document.getElementById('actName').value.trim();
+  const hours = parseFloat(document.getElementById('actHours').value);
+  const err = document.getElementById('errMsg');
+  err.style.display = 'none';
+  if (!name) { err.textContent = '⚠️ Nama aktivitas tidak boleh kosong!'; err.style.display = 'block'; return; }
+  if (isNaN(hours) || hours <= 0) { err.textContent = '⚠️ Durasi harus lebih dari 0!'; err.style.display = 'block'; return; }
+  const total = activities.reduce((s, a) => s + a.hours, 0);
+  if (total + hours > 24) {
+    err.textContent = '⚠️ Total melebihi 24 jam! Sisa: ' + (24 - total).toFixed(1) + ' jam';
+    err.style.display = 'block'; return;
+  }
+  activities.push({ name, hours, color: COLORS[selectedColor] });
+  document.getElementById('actName').value = '';
+  document.getElementById('actHours').value = '';
+  render();
+}
+
+function deleteActivity(i) {
+  activities.splice(i, 1);
+  render();
+}
+
+function resetAll() {
+  if (activities.length === 0) return;
+  if (confirm('Reset semua aktivitas?')) { activities = []; render(); }
+}
+
+function render() {
+  const total = activities.reduce((s, a) => s + a.hours, 0);
+  document.getElementById('totalInfo').textContent = 'Total: ' + total.toFixed(1) + ' / 24 jam terisi';
+
+  const listEl = document.getElementById('actList');
+  listEl.innerHTML = activities.length === 0
+    ? '<p class="empty-msg">Belum ada aktivitas...</p>'
+    : activities.map((a, i) => `
+      <div class="activity-item">
+        <div class="dot" style="background:${a.color}"></div>
+        <span class="activity-label">${a.name}</span>
+        <span class="activity-time">${a.hours} jam</span>
+        <button class="del-btn" onclick="deleteActivity(${i})">✕</button>
+      </div>`).join('');
+
+  const legendEl = document.getElementById('legendList');
+  const sisa = parseFloat((24 - total).toFixed(1));
+  if (activities.length === 0) {
+    legendEl.innerHTML = '<p class="empty-msg">Belum ada data...</p>';
+  } else {
+    let html = activities.map(a => `
+      <div class="legend-item">
+        <div class="legend-dot" style="background:${a.color}"></div>
+        <span class="legend-name">${a.name}</span>
+        <span class="legend-pct">${a.hours} jam · ${Math.round(a.hours / 24 * 100)}%</span>
+      </div>`).join('');
+    if (sisa > 0) html += `
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#f0f0f0;border:1px solid #ddd"></div>
+        <span class="legend-name" style="color:#ccc">Belum diisi</span>
+        <span class="legend-pct">${sisa} jam · ${Math.round(sisa / 24 * 100)}%</span>
+      </div>`;
+    legendEl.innerHTML = html;
+  }
+  drawClock();
+}
+
+function drawClock() {
+  const canvas = document.getElementById('clock');
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+  const cx = size / 2, cy = size / 2;
+  const r = size * 0.42, inner = size * 0.22;
+  ctx.clearRect(0, 0, size, size);
+
+  const total = activities.reduce((s, a) => s + a.hours, 0);
+  const sisa = 24 - total;
+  const slices = [...activities];
+  if (sisa > 0) slices.push({ name: 'Belum diisi', hours: sisa, color: '#f0f0f0' });
+
+  let startAngle = -Math.PI / 2;
+  slices.forEach(a => {
+    const slice = (a.hours / 24) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, startAngle + slice);
+    ctx.closePath();
+    ctx.fillStyle = a.color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    startAngle += slice;
+  });
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, inner, 0, 2 * Math.PI);
+  ctx.fillStyle = '#fff8f0';
+  ctx.fill();
+
+  ctx.fillStyle = '#e85d04';
+  ctx.font = 'bold ' + Math.round(size * 0.065) + 'px Nunito';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('24 Jam', cx, cy - size * 0.03);
+  ctx.fillStyle = '#bbb';
+  ctx.font = Math.round(size * 0.044) + 'px Nunito';
+  ctx.fillText('Harimu', cx, cy + size * 0.04);
+
+  for (let h = 0; h < 24; h++) {
+    const angle = -Math.PI / 2 + (h / 24) * 2 * Math.PI;
+    const isMajor = h % 6 === 0;
+    const r1 = r + 3, r2 = r + (isMajor ? 12 : 7);
+    ctx.beginPath();
+    ctx.moveTo(cx + r1 * Math.cos(angle), cy + r1 * Math.sin(angle));
+    ctx.lineTo(cx + r2 * Math.cos(angle), cy + r2 * Math.sin(angle));
+    ctx.strokeStyle = isMajor ? '#bbb' : '#ddd';
+    ctx.lineWidth = isMajor ? 2 : 1;
+    ctx.stroke();
+    if (isMajor) {
+      const lx = cx + (r + 22) * Math.cos(angle);
+      const ly = cy + (r + 22) * Math.sin(angle);
+      ctx.fillStyle = '#999';
+      ctx.font = 'bold ' + Math.round(size * 0.042) + 'px Nunito';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(h === 0 ? '00' : h, lx, ly);
+    }
+  }
+}
+
+render();
+</script>
+</body>
+</html>
